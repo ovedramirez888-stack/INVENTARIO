@@ -119,9 +119,11 @@ else:
     
     # CALCULOS DE METRICAS CABECERA (FINCA GARCITAS)
     df_activos_garcitas = df[(df["Finca"] == "Garcitas") & (df["Estado"] == "Activo")]
+    df_transito = df[df["Estado"] == "En Tránsito"]
     total_animales = len(df_activos_garcitas)
     total_hembras = len(df_activos_garcitas[df_activos_garcitas["Sexo"] == "Hembra"])
     total_machos = len(df_activos_garcitas[df_activos_garcitas["Sexo"] == "Macho"])
+    total_transito = len(df_transito)
 
     # ENCABEZADO Y HEADER CON METRICAS SUPERIOR DERECHA
     head_col1, head_col2 = st.columns([2, 3])
@@ -129,11 +131,12 @@ else:
         st.title("🐄 Inventario Ganadero")
         st.caption(f"Usuario: **{st.session_state.username}** | Rol: {st.session_state.user_role}")
     with head_col2:
-        # METRICAS EN LA PARTE SUPERIOR DERECHA
-        m1, m2, m3 = st.columns(3)
+        # METRICAS EN LA PARTE SUPERIOR DERECHA (INCLUYE CONTADOR EN TRÁNSITO)
+        m1, m2, m3, m4 = st.columns(4)
         m1.metric("Total en Finca", f"{total_animales}")
         m2.metric("Hembras (🐄)", f"{total_hembras}")
         m3.metric("Machos (🐂)", f"{total_machos}")
+        m4.metric("En Tránsito (🚚)", f"{total_transito}")
 
     st.markdown("---")
 
@@ -225,27 +228,26 @@ else:
             st.write(f"### Reses Disponibles ({len(df_finca_filtro)})")
             st.dataframe(df_finca_filtro[["NroAnimal", "Sexo", "Cat_Ingreso", "Finca"]], use_container_width=True)
             
-            with st.form("form_despacho_transporte"):
-                reses_seleccionadas = st.multiselect(
-                    "Seleccione los números de arete/consecutivos que suben al camión:",
-                    options=df_finca_filtro["NroAnimal"].tolist()
-                )
-                
-                pesos_dict = {}
-                if reses_seleccionadas:
+            # MULTISELECT FUERA DEL FORMULARIO PARA DETECCIÓN EN TIEMPO REAL
+            reses_seleccionadas = st.multiselect(
+                "Seleccione los números de arete/consecutivos que suben al camión:",
+                options=df_finca_filtro["NroAnimal"].tolist()
+            )
+            
+            if reses_seleccionadas:
+                with st.form("form_despacho_transporte"):
                     st.write("#### Ingrese el Peso de Salida (Kg) para cada res seleccionada:")
+                    pesos_dict = {}
                     for res in reses_seleccionadas:
                         pesos_dict[res] = st.number_input(
                             f"Peso de salida para {res} (Kg):",
-                            min_value=50, max_value=1000, value=450, step=1
+                            min_value=50, max_value=1000, value=450, step=1,
+                            key=f"peso_{res}"
                         )
-                
-                btn_despachar = st.form_submit_button("🚚 CONFIRMAR Y DESPACHAR A TRÁNSITO")
-                
-                if btn_despachar:
-                    if not reses_seleccionadas:
-                        st.warning("Debe seleccionar al menos una res para despachar.")
-                    else:
+                    
+                    btn_despachar = st.form_submit_button("🚚 CONFIRMAR Y DESPACHAR A TRÁNSITO")
+                    
+                    if btn_despachar:
                         for res in reses_seleccionadas:
                             idx = df[df["NroAnimal"] == res].index
                             df.loc[idx, "Estado"] = "En Tránsito"
@@ -254,6 +256,8 @@ else:
                         st.session_state.inventario = df
                         st.success(f"¡Se despacharon {len(reses_seleccionadas)} reses al estado EN TRÁNSITO exitosamente!")
                         st.rerun()
+            else:
+                st.info("👆 Seleccione una o más reses en el cuadro superior para ingresar sus pesos de salida.")
 
     # ----------------- ROL 2: VAQUERO BASCULA -----------------
     elif st.session_state.username == 'Bascula':
