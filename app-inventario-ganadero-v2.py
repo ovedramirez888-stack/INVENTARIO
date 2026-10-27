@@ -63,10 +63,10 @@ if not st.session_state.logged_in:
         if submit_button:
             login(usuario.strip(), password.strip())
             
-    st.info("💡 Credenciales disponibles:
+    st.info(""""💡 Credenciales disponibles:
 - **Finca:** Usuario: `Garcitas` | Clave: `Garcitas`
 - **Báscula:** Usuario: `Bascula` | Clave: `Bascula`
-- **Oficina:** Usuario: `Comercial` | Clave: `Comercial`")
+- **Oficina:** Usuario: `Comercial` | Clave: `Comercial`""")
 
 # ----------------- APLICACIÓN AUTENTICADA -----------------
 else:
